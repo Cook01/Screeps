@@ -1,9 +1,6 @@
 /**
  * task_withdraw:
- * Withdraws energy from prioritized sources:
- * 1. Tombstones
- * 2. Dropped resources
- * 3. Structures (preferred > emergency > last resort)
+ * Withdraws energy from prioritized sources
  */
 
 const ALLOWED_WITHDRAW_STRUCTURES = [
