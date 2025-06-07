@@ -1,8 +1,3 @@
-/**
- * task_withdraw:
- * Withdraws energy from prioritized sources
- */
-
 const ALLOWED_WITHDRAW_STRUCTURES = [
     STRUCTURE_STORAGE,
     STRUCTURE_CONTAINER,
@@ -42,7 +37,8 @@ module.exports = {
         }
 
         // ===== Nothing found =====
-        creep.memory.task = 'HARVEST';
+        delete creep.memory.task;
+        return;
     },
     
     
@@ -71,7 +67,7 @@ function withdrawFrom(creep, targets) {
 
     const result = creep.withdraw(target, RESOURCE_ENERGY);
     if (result === ERR_NOT_IN_RANGE) {
-        creep.moveTo(target, { visualizePathStyle: { stroke: '#aaaaff' } });
+        creep.moveTo(target, { visualizePathStyle: { stroke: '#DAA520' } });
     }
 
     creep.memory.last_energy_source = 'withdraw';
