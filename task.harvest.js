@@ -1,9 +1,3 @@
-/**
- * task_harvest:
- * Harvests from the nearest source with a free adjacent spot.
- * Uses memory caching and area scanning for early-game tight spaces.
- */
-
 module.exports = {
     /** @param {Creep} creep **/
     run: function(creep) {
@@ -32,10 +26,10 @@ module.exports = {
                 candidate_rooms.push(room);
             }
             
-            const sources = creep.room.find(FIND_SOURCES);
+            const sources = creep.room.find(FIND_SOURCES_ACTIVE);
 
             outer: for(const room of candidate_rooms) {
-                const sources = room.find(FIND_SOURCES);
+                const sources = room.find(FIND_SOURCES_ACTIVE);
                 for (const source of sources) {
                     if (isSourceAvailable(source, creep)) {
                         creep.memory.target_source = source.id;
@@ -51,19 +45,21 @@ module.exports = {
             creep.memory.last_energy_source = 'harvest';
         
             if (creep.harvest(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target, { visualizePathStyle: { stroke: '#ffaa00' } });
+                creep.moveTo(target, { visualizePathStyle: { stroke: '#FF8C00' } });
             }
             
             if (creep.store.getFreeCapacity() === 0) {
                 delete creep.memory.target_source;
                 delete creep.memory.target_room;
             }
+        } else {
+            delete creep.memory.task;
         }
     },
     
     
     hasFreeSource: function(creep) {
-        const sources = creep.room.find(FIND_SOURCES);
+        const sources = creep.room.find(FIND_SOURCES_ACTIVE);
         return sources.some(source => isSourceAvailable(source, creep));
     }
 };
@@ -77,60 +73,39 @@ module.exports = {
  * @returns {boolean}
  */
 function isSourceAvailable(source, creep) {
-    const WALKABLE_STRUCTURES = [
-        STRUCTURE_ROAD,
-        STRUCTURE_CONTAINER,
-        STRUCTURE_RAMPART
-    ];
+   // All Cell in a 3*3 Area aroud each sources
+    var total_spots_count = 8;
+    
+    // Count all obstacles
+    var obstacles_count = 0
+    const area = source.room.lookAtArea(source.pos.y - 1, source.pos.x - 1, source.pos.y + 1, source.pos.x + 1);
 
-    const x = source.pos.x;
-    const y = source.pos.y;
-    const area = source.room.lookAtArea(y - 1, x - 1, y + 1, x + 1, false);
+    for(const y_key in area){
+        for(const x_key in area[y_key]){
+            if(x_key == source.pos.x && y_key == source.pos.y) continue;
+            
+            const cell = area[y_key][x_key];
+            for(const key in cell){
 
-    let free_spots = 0;
-    let creeps_blocking = new Set();
-
-    for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-            if (dx === 0 && dy === 0) continue;
-
-            const row = area[y + dy];
-            if (!row) continue;
-
-            const tile = row[x + dx];
-            if (!tile) continue;
-
-            let is_walkable = true;
-
-            for (const item of tile) {
-                if (item.type === 'terrain' && item.terrain === 'wall') {
-                    is_walkable = false;
+                if(cell[key].type == "creep" && cell[key].creep.id == creep.id) break;
+                if(cell[key].type == LOOK_STRUCTURES && cell[key].structure.structureType == STRUCTURE_ROAD) break;
+                
+                if(OBSTACLE_OBJECT_TYPES.includes(cell[key].type)){
+                    obstacles_count++;
+                    break;
+                } else if(cell[key].type === LOOK_STRUCTURES && OBSTACLE_OBJECT_TYPES.includes(cell[key].structure.structureType)){
+                    obstacles_count++;
+                    break;
+                } else if(cell[key].type === LOOK_STRUCTURES && cell[key].structure.structureType === STRUCTURE_RAMPART && !cell[key].structure.my){
+                    obstacles_count++;
+                    break;
+                } else if(cell[key].type === LOOK_TERRAIN && cell[key].terrain === "wall"){
+                    obstacles_count++;
                     break;
                 }
-                if (item.type === 'structure' && !WALKABLE_STRUCTURES.includes(item.structure.structureType)) {
-                    is_walkable = false;
-                    break;
-                }
-                if (item.type === 'creep' && item.creep.id !== creep.id) {
-                    is_walkable = false;
-                    creeps_blocking.add(item.creep.id);
-                    break;
-                }
-            }
-
-            if (is_walkable) {
-                free_spots++;
             }
         }
     }
-
-    // Count how many creeps are targeting this source, excluding self
-    // If they already block a tile, we do NOT count them again
-    const others_targeting = _.filter(Game.creeps, c =>
-        c.id !== creep.id &&
-        c.memory.target_source === source.id &&
-        !creeps_blocking.has(c.id) // avoid double count
-    ).length;
-
-    return others_targeting < free_spots;
+    
+    return (obstacles_count < total_spots_count);
 }
