@@ -1,10 +1,3 @@
-/**
- * task_store:
- * Transfers energy to the closest appropriate structure.
- * Prioritizes: Spawn/Extension > Tower > Storage structures
- * Uses findClosestByRange for CPU efficiency.
- */
-
 const PRIORITY_STORE_TARGETS = [
     STRUCTURE_EXTENSION,
     STRUCTURE_SPAWN
@@ -46,6 +39,7 @@ module.exports = {
 
         // ===== Nothing to store to =====
         creep.say('📦 Full'); // optional: drop energy, wait, or switch role
+        delete creep.memory.task;
     }
 };
 
@@ -76,7 +70,7 @@ function storeTo(creep, targets) {
 
     const result = creep.transfer(target, RESOURCE_ENERGY);
     if (result === ERR_NOT_IN_RANGE) {
-        creep.moveTo(target, { visualizePathStyle: { stroke: '#88ff88' } });
+        creep.moveTo(target, { visualizePathStyle: { stroke: '#32CD32' } });
     }
 
     // Optional: clear memory after storing
