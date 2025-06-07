@@ -35,7 +35,7 @@ const RoleMultiTasker = {
             switch (creep.memory.task) {
                 case 'HARVEST': return task_harvest.run(creep);
                 case 'WITHDRAW': return task_withdraw.run(creep);
-                //case 'CLEANUP': return task_cleanup.run(creep);
+                case 'CLEANUP': return task_cleanup.run(creep);
             }
         }
 
@@ -62,14 +62,17 @@ const RoleMultiTasker = {
                     creep.say('🪫 Withdraw');
                 }
                 return task_withdraw.run(creep);
-            } // 3. Try WITHDRAW if energy available and reserves are sufficient
-            else if (creep.room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType === RESOURCE_ENERGY && r.amount > 20}).length > 0 || creep.room.find(FIND_TOMBSTONES, {filter: t => t.store[RESOURCE_ENERGY] > 0}).length > 0) {
+            } // 4. Try CLEAUNP if Energy is wasted somewhere
+            else if(
+                (creep.room.find(FIND_DROPPED_RESOURCES, {filter: r => r.resourceType === RESOURCE_ENERGY}).length > 0) ||
+                (creep.room.find(FIND_TOMBSTONES, {filter: t => t.store[RESOURCE_ENERGY] > 0}).length > 0)
+                ){
                 if (creep.memory.task !== 'CLEANUP') {
                     creep.memory.task = 'CLEANUP';
                     delete creep.memory.target_repair;
                     delete creep.memory.target_source;
                     delete creep.memory.target_room;
-                    //creep.say('🧹 Cleanup');
+                    creep.say('🧹 Cleanup');
                 }
                 return task_cleanup.run(creep);
             }
